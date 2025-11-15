@@ -1,87 +1,64 @@
-'use client'
+"use client";
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef } from "react";
 
 interface TrackingMapProps {
-  currentPosition?: { lat: number; lng: number }
-  destinationPosition?: { lat: number; lng: number }
-  status?: string
+  lat: number;
+  lng: number;
 }
 
-const TrackingMap: React.FC<TrackingMapProps> = ({ 
-  currentPosition = { lat: -6.2088, lng: 106.8456 },
-  destinationPosition = { lat: -6.2297, lng: 106.8295 },
-  status = 'shipped'
-}) => {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
+const TrackingMap: React.FC<TrackingMapProps> = ({ lat, lng }) => {
+  const mapRef = useRef<HTMLDivElement>(null); // FIX TS error
+  const mapInstanceRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return
-
-    // ⬅️ Dynamic import agar tidak dieksekusi di server
+    if (!mapRef.current || mapInstanceRef.current) return;
     const loadLeaflet = async () => {
-      const L = (await import('leaflet')).default
+      const L = (await import("leaflet")).default;
 
-      // FIX ikon leaflet hilang di Next.js
-      delete (L.Icon.Default.prototype as any)._getIconUrl
+      // Fix default icon
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
-        iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-        iconUrl: '/leaflet/marker-icon.png',
-        shadowUrl: '/leaflet/marker-shadow.png',
-      })
+        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+        iconUrl: "/leaflet/marker-icon.png",
+        shadowUrl: "/leaflet/marker-shadow.png",
+      });
 
-      const map = L.map(mapRef.current).setView(currentPosition, 12)
+      const map = L.map(mapRef.current as HTMLElement).setView(
+        [lat, lng],
+        13
+      );
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map)
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
 
-      const currentLocationIcon = L.divIcon({ ... })
-      const destinationIcon = L.divIcon({ ... })
+      L.marker([lat, lng]).addTo(map);
 
-      if (status === 'shipped' || status === 'delivered') {
-        L.marker([currentPosition.lat, currentPosition.lng], { icon: currentLocationIcon })
-          .addTo(map)
-      }
+      mapInstanceRef.current = map;
+    };
 
-      L.marker([destinationPosition.lat, destinationPosition.lng], { icon: destinationIcon })
-        .addTo(map)
-
-      if (status === 'shipped') {
-        L.polyline(
-          [
-            [currentPosition.lat, currentPosition.lng],
-            [destinationPosition.lat, destinationPosition.lng]
-          ],
-          { color: '#242a2e', weight: 3, opacity: 0.7, dashArray: '10,10' }
-        ).addTo(map)
-      }
-
-      mapInstanceRef.current = map
-    }
-
-    loadLeaflet()
+    loadLeaflet();
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
-    }
-  }, [currentPosition, destinationPosition, status])
+    };
+  }, [lat, lng]);
 
   return (
-    <div 
-      ref={mapRef} 
-      style={{ 
-        height: '400px', 
-        width: '100%',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }} 
+    <div
+      ref={mapRef}
+      style={{
+        height: "400px",
+        width: "100%",
+        borderRadius: "8px",
+        overflow: "hidden",
+      }}
     />
-  )
-}
+  );
+};
 
-export default TrackingMap
+export default TrackingMap;
