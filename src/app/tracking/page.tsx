@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-// Map di-load hanya di browser, aman dari SSR
+// Map hanya berjalan di client
 const TrackingMap = dynamic(() => import("@/components/TrackingMap"), {
   ssr: false,
 });
@@ -13,34 +13,28 @@ export default function TrackingPage() {
   const searchParams = useSearchParams();
   const trackingId = searchParams.get("id");
 
+  const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
-
   useEffect(() => {
     if (!trackingId) return;
 
-    const loadData = async () => {
+    const load = async () => {
       try {
         const res = await fetch(`/api/tracking?id=${trackingId}`);
-        const json = await res.json();
-        setData(json);
-      } catch (e) {
-        console.error("Error fetching data:", e);
+        const data = await res.json();
+        setStatus(data);
+      } catch (error) {
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    load();
   }, [trackingId]);
 
-  if (!trackingId) {
-    return <p className="p-4">Tracking ID tidak ditemukan.</p>;
-  }
-
-  if (loading) {
-    return <p className="p-4">Loading...</p>;
-  }
+  if (!trackingId) return <p>Tracking ID tidak ditemukan.</p>;
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="p-4 space-y-4">
@@ -48,11 +42,11 @@ export default function TrackingPage() {
 
       <div className="border p-4 rounded-lg">
         <p><strong>ID:</strong> {trackingId}</p>
-        <p><strong>Status:</strong> {data?.status}</p>
-        <p><strong>Alamat:</strong> {data?.address}</p>
+        <p><strong>Status:</strong> {status?.status}</p>
+        <p><strong>Alamat:</strong> {status?.address}</p>
       </div>
-      {/* Map aman */}
-      <TrackingMap lat={data?.lat || 0} lng={data?.lng || 0} />
+
+      <TrackingMap lat={status?.lat || 0} lng={status?.lng || 0} />
     </div>
   );
 }

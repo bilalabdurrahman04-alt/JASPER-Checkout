@@ -7,16 +7,14 @@ interface TrackingMapProps {
   lng: number;
 }
 
-const TrackingMap: React.FC<TrackingMapProps> = ({ lat, lng }) => {
-  const mapRef = useRef<HTMLDivElement>(null); // FIX TS error
-  const mapInstanceRef = useRef<any>(null);
+export default function TrackingMap({ lat, lng }: TrackingMapProps) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-    const loadLeaflet = async () => {
-      const L = (await import("leaflet")).default;
+    let map: any;
 
-      // Fix default icon
+    import("leaflet").then((L) => {
+      if (!mapRef.current) return;
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "/leaflet/marker-icon-2x.png",
@@ -24,41 +22,24 @@ const TrackingMap: React.FC<TrackingMapProps> = ({ lat, lng }) => {
         shadowUrl: "/leaflet/marker-shadow.png",
       });
 
-      const map = L.map(mapRef.current as HTMLElement).setView(
-        [lat, lng],
-        13
-      );
+      map = L.map(mapRef.current).setView([lat, lng], 13);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
       L.marker([lat, lng]).addTo(map);
-
-      mapInstanceRef.current = map;
-    };
-
-    loadLeaflet();
+    });
 
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (map) map.remove();
     };
   }, [lat, lng]);
 
   return (
     <div
       ref={mapRef}
-      style={{
-        height: "400px",
-        width: "100%",
-        borderRadius: "8px",
-        overflow: "hidden",
-      }}
+      style={{ height: "400px", width: "100%", borderRadius: "8px" }}
     />
   );
-};
-
-export default TrackingMap;
+}
